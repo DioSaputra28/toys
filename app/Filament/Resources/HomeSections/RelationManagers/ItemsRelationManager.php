@@ -22,13 +22,18 @@ class ItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'items';
 
+    private const MAX_ACTIVE_ITEMS = [
+        'editorial_picks' => 7,
+        'story_feature' => 4,
+    ];
+
     public static function canViewForOwnerRecord(mixed $ownerRecord): bool
     {
         if (! $ownerRecord instanceof HomeSection) {
             return true;
         }
 
-        return $ownerRecord->section_key !== 'quote';
+        return ! in_array($ownerRecord->section_key, ['quote', 'category_links'], true);
     }
 
     public static function canCreateForOwnerRecord(mixed $ownerRecord): bool
@@ -37,17 +42,19 @@ class ItemsRelationManager extends RelationManager
             return true;
         }
 
-        if ($ownerRecord->section_key === 'quote') {
+        if (! self::canViewForOwnerRecord($ownerRecord)) {
             return false;
         }
 
-        if ($ownerRecord->section_key !== 'story_feature') {
+        $maximumActiveItems = self::maxActiveItemsForSection($ownerRecord);
+
+        if ($maximumActiveItems === null) {
             return true;
         }
 
         return $ownerRecord->items()
             ->where('is_active', true)
-            ->count() < 4;
+            ->count() < $maximumActiveItems;
     }
 
     public function form(Schema $schema): Schema
@@ -57,7 +64,7 @@ class ItemsRelationManager extends RelationManager
                 TextInput::make('title')
                     ->label('Title')
                     ->maxLength(255)
-                    ->helperText('Optional title used by sections such as editorial picks. For story feature, the first item becomes the main story and the next items become supporting cards.'),
+                    ->helperText($this->titleHelperText()),
                 FileUpload::make('image_path')
                     ->label('Image file')
                     ->disk('public')
@@ -86,7 +93,7 @@ class ItemsRelationManager extends RelationManager
                     ->numeric()
                     ->default(0)
                     ->required()
-                    ->helperText('Lower numbers appear earlier within this section. In story feature, only the first four active items can be used, and the add button disappears after four active items exist.')
+                    ->helperText($this->sortOrderHelperText())
                     ->validationMessages([
                         'required' => 'Please set a sort order for this item.',
                         'numeric' => 'Sort order must be a number.',
@@ -136,5 +143,28 @@ class ItemsRelationManager extends RelationManager
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function maxActiveItemsForSection(HomeSection $section): ?int
+    {
+        return self::MAX_ACTIVE_ITEMS[$section->section_key] ?? null;
+    }
+
+    private function titleHelperText(): string
+    {
+        return match ($this->getOwnerRecord()?->section_key) {
+            'story_feature' => 'The first item becomes the main story and the next items become supporting cards.',
+            'editorial_picks' => 'Use this item for one of the seven editorial cards shown on the homepage.',
+            default => 'Optional title used by sections such as editorial picks.',
+        };
+    }
+
+    private function sortOrderHelperText(): string
+    {
+        return match ($this->getOwnerRecord()?->section_key) {
+            'story_feature' => 'Lower numbers appear earlier within this section. Only the first four active items can be used, and the add button disappears after four active items exist.',
+            'editorial_picks' => 'Lower numbers appear earlier within this section. Only the first seven active items are shown, and the add button disappears after seven active items exist.',
+            default => 'Lower numbers appear earlier within this section.',
+        };
     }
 }
