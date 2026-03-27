@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+node_modules
+vendor
+storage
+bootstrap/cache
+tests
+coverage
+npm-debug.log
+.DS_Store
+.idea
+.vscode
