@@ -11,6 +11,10 @@ RUN npm run build
 FROM composer:2.7 AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libicu-dev \
+    && docker-php-ext-install intl \
+    && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /app/bootstrap/cache
 RUN composer install \
     --no-dev \
