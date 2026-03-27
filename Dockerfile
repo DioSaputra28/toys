@@ -11,6 +11,7 @@ RUN npm run build
 FROM composer:2.7 AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
+RUN mkdir -p /app/bootstrap/cache
 RUN composer install \
     --no-dev \
     --prefer-dist \
