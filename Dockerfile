@@ -11,8 +11,8 @@ RUN npm run build
 FROM php:8.4-cli-alpine AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN apk add --no-cache curl git unzip icu-dev $PHPIZE_DEPS \
-    && docker-php-ext-install intl \
+RUN apk add --no-cache curl git unzip icu-dev libzip-dev zlib-dev $PHPIZE_DEPS \
+    && docker-php-ext-install intl zip \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && apk del $PHPIZE_DEPS
 RUN mkdir -p /app/bootstrap/cache
