@@ -24,7 +24,9 @@ RUN composer install \
     --optimize-autoloader \
     --no-scripts
 COPY . ./
-RUN composer dump-autoload --optimize
+RUN mkdir -p /app/bootstrap/cache \
+    && chmod -R 775 /app/bootstrap/cache \
+    && composer dump-autoload --optimize --no-scripts
 
 FROM php:8.4-fpm-bookworm AS runtime
 
