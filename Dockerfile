@@ -8,11 +8,12 @@ COPY resources ./resources
 COPY vite.config.js ./
 RUN npm run build
 
-FROM composer:2.7 AS composer
+FROM php:8.4-cli-alpine AS composer
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN apk add --no-cache icu-dev $PHPIZE_DEPS \
+RUN apk add --no-cache curl git unzip icu-dev $PHPIZE_DEPS \
     && docker-php-ext-install intl \
+    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && apk del $PHPIZE_DEPS
 RUN mkdir -p /app/bootstrap/cache
 RUN composer install \
@@ -25,7 +26,7 @@ RUN composer install \
 COPY . ./
 RUN composer dump-autoload --optimize
 
-FROM php:8.3-fpm-bookworm AS runtime
+FROM php:8.4-fpm-bookworm AS runtime
 
 ENV APP_ENV=production \
     APP_DEBUG=false \
